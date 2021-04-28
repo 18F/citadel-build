@@ -56,8 +56,9 @@ class Citadel
       else
         begin
           metadata_service = Chef::HTTP.new('http://169.254.169.254')
-          iam_role = metadata_service.get('latest/meta-data/iam/security-credentials/')
-          creds_json = metadata_service.get("latest/meta-data/iam/security-credentials/#{iam_role}")
+          v2_token = metadata_service.put("/latest/api/token", nil, { 'X-aws-ec2-metadata-token-ttl-seconds': "120" })
+          iam_role = metadata_service.get('latest/meta-data/iam/security-credentials/', { 'X-aws-ec2-metadata-token' => v2_token })
+          creds_json = metadata_service.get("latest/meta-data/iam/security-credentials/#{iam_role}", { 'X-aws-ec2-metadata-token' => v2_token })
           Chef::JSONCompat.parse(creds_json)
         rescue Net::HTTPServerException
           raise CitadelError.new('Unable to find IAM credentials for node from EC2 metadata')
